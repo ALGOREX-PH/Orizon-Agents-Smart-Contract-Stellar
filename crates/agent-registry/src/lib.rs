@@ -13,8 +13,8 @@ pub enum DataKey {
     Ids,
 }
 
-#[contracterror(export = false)]
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[contracterror]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 #[repr(u32)]
 pub enum Error {
     Unauthorized = 1,
