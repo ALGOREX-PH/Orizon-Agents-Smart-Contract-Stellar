@@ -70,7 +70,7 @@ impl AgentRegistry {
         env.storage().instance().set(&DataKey::Ids, &ids);
 
         env.events()
-            .publish((symbol_short!("registered"), id.clone()), owner);
+            .publish((symbol_short!("regd"), id.clone()), owner);
         Ok(())
     }
 
