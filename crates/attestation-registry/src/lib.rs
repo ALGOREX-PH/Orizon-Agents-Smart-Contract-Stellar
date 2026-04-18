@@ -1,6 +1,6 @@
 #![no_std]
 
-use orizon_shared::{codes, Attestation};
+use orizon_shared::Attestation;
 use soroban_sdk::{
     contract, contracterror, contractimpl, contracttype, symbol_short, Address, BytesN, Env,
     Symbol, Vec,
@@ -14,17 +14,18 @@ pub enum DataKey {
 }
 
 #[contracterror]
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 #[repr(u32)]
 pub enum Error {
-    Unauthorized = codes::UNAUTHORIZED,
-    NotFound = codes::NOT_FOUND,
-    AlreadyExists = codes::ALREADY_EXISTS,
+    Unauthorized = 1,
+    NotFound = 2,
+    AlreadyExists = 3,
 }
 
 #[contract]
 pub struct AttestationRegistry;
 
+#[allow(deprecated)]
 #[contractimpl]
 impl AttestationRegistry {
     pub fn __constructor(env: Env, admin: Address, sealer: Address) {
