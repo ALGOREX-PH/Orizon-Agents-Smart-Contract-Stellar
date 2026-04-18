@@ -1,4 +1,6 @@
 [toolchain]
 channel = "stable"
-targets = ["wasm32-unknown-unknown"]
+# wasm32v1-none is what stellar-cli v26+ uses for `stellar contract build`.
+# wasm32-unknown-unknown stays for older toolchains and ad-hoc cargo build calls.
+targets = ["wasm32v1-none", "wasm32-unknown-unknown"]
 components = ["rustfmt", "clippy"]

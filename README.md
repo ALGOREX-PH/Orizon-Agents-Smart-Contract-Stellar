@@ -15,11 +15,17 @@ Target: **Stellar testnet**, Protocol 22+. Payments settle in **USDC** via the S
 
 ```bash
 rustup target add wasm32-unknown-unknown
-cargo install --locked stellar-cli       # ← no --features opt; that flag was removed in v26
 
-stellar --version                          # confirm: "stellar 26.x …"
-stellar keys generate --global admin --network testnet --fund
-stellar keys address admin                 # your deployer G-address
+# Easiest install: pre-built binary from GitHub releases
+mkdir -p ~/.local/bin
+curl -L https://github.com/stellar/stellar-cli/releases/download/v26.0.0/stellar-cli-26.0.0-x86_64-unknown-linux-gnu.tar.gz \
+  | tar xz -C ~/.local/bin/
+chmod +x ~/.local/bin/stellar
+stellar --version                       # → stellar 26.x.x
+
+# Identity (v26: no --global flag — identities are global by default)
+stellar keys generate admin --network testnet --fund
+stellar keys address admin              # your deployer G-address
 ```
 
 > ⚠️ Don't `apt install seqan-apps`. Ubuntu's seqan-apps package ships

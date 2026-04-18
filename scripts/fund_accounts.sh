@@ -9,7 +9,7 @@ IDS=(admin payer agent_copy agent_seo agent_research agent_audit)
 for id in "${IDS[@]}"; do
   if ! stellar keys address "$id" >/dev/null 2>&1; then
     echo "→ generating $id"
-    stellar keys generate --global "$id" --network "$NETWORK" --fund
+    stellar keys generate "$id" --network "$NETWORK" --fund
   else
     echo "→ re-funding $id"
     stellar keys fund "$id" --network "$NETWORK" || true
