@@ -29,20 +29,21 @@ pub enum DataKey {
 }
 
 #[contracterror]
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 #[repr(u32)]
 pub enum Error {
-    Unauthorized = codes::UNAUTHORIZED,
-    NotFound = codes::NOT_FOUND,
-    Expired = codes::EXPIRED,
-    Insufficient = codes::INSUFFICIENT_AUTH,
-    Revoked = codes::REVOKED,
+    Unauthorized = 1,
+    NotFound = 2,
+    Expired = 4,
+    Insufficient = 5,
+    Revoked = 6,
     BadAmount = 101,
 }
 
 #[contract]
 pub struct PaymentEscrow;
 
+#[allow(deprecated)]
 #[contractimpl]
 impl PaymentEscrow {
     pub fn __constructor(
