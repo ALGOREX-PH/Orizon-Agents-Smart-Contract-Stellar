@@ -1,6 +1,6 @@
 #![no_std]
 
-use orizon_shared::{codes, Score};
+use orizon_shared::Score;
 use soroban_sdk::{
     contract, contracterror, contractimpl, contracttype, symbol_short, Address, BytesN, Env,
     Symbol,
@@ -16,18 +16,19 @@ pub enum DataKey {
 }
 
 #[contracterror]
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 #[repr(u32)]
 pub enum Error {
-    Unauthorized = codes::UNAUTHORIZED,
-    Replay = codes::REPLAY,
-    NotFound = codes::NOT_FOUND,
+    Unauthorized = 1,
+    NotFound = 2,
+    Replay = 7,
     OutOfRange = 100,
 }
 
 #[contract]
 pub struct ReputationLedger;
 
+#[allow(deprecated)]
 #[contractimpl]
 impl ReputationLedger {
     pub fn __constructor(env: Env, admin: Address, scorer: Address) {

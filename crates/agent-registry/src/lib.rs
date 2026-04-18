@@ -26,6 +26,7 @@ pub enum Error {
 #[contract]
 pub struct AgentRegistry;
 
+#[allow(deprecated)]
 #[contractimpl]
 impl AgentRegistry {
     /// One-shot constructor set by Soroban at deploy time.
