@@ -1,9 +1,10 @@
 #![no_std]
 
-use orizon_shared::{codes, Authorization, Receipt};
+use orizon_shared::{Authorization, Receipt};
 use soroban_sdk::{
-    contract, contracterror, contractimpl, contracttype, symbol_short, token, Address, BytesN,
-    Env, IntoVal, Symbol,
+    contract, contracterror, contractimpl, contracttype, symbol_short, token,
+    xdr::ToXdr,
+    Address, Bytes, BytesN, Env, IntoVal, Symbol,
 };
 
 /// Minimal import of the agent-registry's `owner_of` view so we can resolve payouts.
