@@ -227,16 +227,14 @@ fn next_id(env: &Env) -> BytesN<16> {
     env.storage().instance().set(&DataKey::Nonce, &(n + 1));
 
     // Derive a BytesN<16> from (timestamp, ledger_seq, nonce, contract_addr).
-    // sha256 output is 32 bytes; we take the high half for a compact id.
-    let topic: soroban_sdk::Vec<soroban_sdk::Val> = soroban_sdk::vec![
-        env,
-        env.ledger().timestamp().into_val(env),
-        env.ledger().sequence().into_val(env),
-        n.into_val(env),
-        env.current_contract_address().into_val(env),
-    ];
-    let bytes = env.crypto().sha256(&topic.to_xdr(env));
-    let full = bytes.to_array();
+    // sha256 output is 32 bytes; take the high half for a compact id.
+    let mut seed = Bytes::new(env);
+    seed.append(&env.ledger().timestamp().to_xdr(env));
+    seed.append(&env.ledger().sequence().to_xdr(env));
+    seed.append(&n.to_xdr(env));
+    seed.append(&env.current_contract_address().to_xdr(env));
+    let hashed = env.crypto().sha256(&seed);
+    let full = hashed.to_array();
     let mut half = [0u8; 16];
     half.copy_from_slice(&full[..16]);
     BytesN::from_array(env, &half)
