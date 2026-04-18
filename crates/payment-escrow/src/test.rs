@@ -9,7 +9,7 @@ use soroban_sdk::{
 };
 
 fn setup(env: &Env) -> Fixture {
-    env.mock_all_auths();
+    env.mock_all_auths_allowing_non_root_auth();
 
     let admin = Address::generate(env);
     let payer = Address::generate(env);
