@@ -70,7 +70,7 @@ fn authorize_charge_receipt() {
     let env = Env::default();
     env.ledger().set(LedgerInfo {
         timestamp: 1_000,
-        protocol_version: 22,
+        protocol_version: 23,
         sequence_number: 1,
         network_id: [0; 32],
         base_reserve: 10,
@@ -105,7 +105,7 @@ fn cannot_overdraw_authorization() {
     let env = Env::default();
     env.ledger().set(LedgerInfo {
         timestamp: 1_000,
-        protocol_version: 22,
+        protocol_version: 23,
         sequence_number: 1,
         network_id: [0; 32],
         base_reserve: 10,
