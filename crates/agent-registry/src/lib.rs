@@ -1,6 +1,6 @@
 #![no_std]
 
-use orizon_shared::{codes, Agent};
+use orizon_shared::Agent;
 use soroban_sdk::{
     contract, contracterror, contractimpl, contracttype, symbol_short, Address, Env, String,
     Symbol, Vec,
@@ -13,14 +13,14 @@ pub enum DataKey {
     Ids,
 }
 
-#[contracterror]
+#[contracterror(export = false)]
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 #[repr(u32)]
 pub enum Error {
-    Unauthorized = codes::UNAUTHORIZED,
-    NotFound = codes::NOT_FOUND,
-    AlreadyExists = codes::ALREADY_EXISTS,
-    Inactive = codes::INACTIVE,
+    Unauthorized = 1,
+    NotFound = 2,
+    AlreadyExists = 3,
+    Inactive = 8,
 }
 
 #[contract]
