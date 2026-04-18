@@ -2,6 +2,17 @@
 
 Four Rust contracts that put the Orizon Agents stack on-chain:
 
+## Repositories
+
+| layer | repo |
+| --- | --- |
+| Smart Contracts (this repo) | https://github.com/ALGOREX-PH/Orizon-Agents-Smart-Contract-Stellar |
+| Frontend — Next.js | https://github.com/ALGOREX-PH/Orizon-Agents-FE-Stellar |
+| Backend — FastAPI + Agno | https://github.com/ALGOREX-PH/Orizon-Agents-BE-Stellar |
+
+---
+
+
 | crate | purpose |
 | --- | --- |
 | `agent-registry` | ERC-8004-style identity, skills, price catalog |

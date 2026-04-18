@@ -2,9 +2,8 @@
 
 use orizon_shared::{Authorization, Receipt};
 use soroban_sdk::{
-    contract, contracterror, contractimpl, contracttype, symbol_short, token,
-    xdr::ToXdr,
-    Address, Bytes, BytesN, Env, Symbol,
+    contract, contracterror, contractimpl, contracttype, symbol_short, token, Address,
+    BytesN, Env, Symbol,
 };
 
 /// Minimal import of the agent-registry's `owner_of` view so we can resolve payouts.
@@ -226,18 +225,13 @@ fn next_id(env: &Env) -> BytesN<16> {
         .unwrap_or(0u64);
     env.storage().instance().set(&DataKey::Nonce, &(n + 1));
 
-    // Derive a BytesN<16> from (timestamp, ledger_seq, nonce, contract_addr).
-    // sha256 output is 32 bytes; take the high half for a compact id.
-    let mut seed = Bytes::new(env);
-    seed.append(&env.ledger().timestamp().to_xdr(env));
-    seed.append(&env.ledger().sequence().to_xdr(env));
-    seed.append(&n.to_xdr(env));
-    seed.append(&env.current_contract_address().to_xdr(env));
-    let hashed = env.crypto().sha256(&seed);
-    let full = hashed.to_array();
-    let mut half = [0u8; 16];
-    half.copy_from_slice(&full[..16]);
-    BytesN::from_array(env, &half)
+    // Deterministic from `n` alone. Using ledger state (timestamp / sequence)
+    // would drift between simulation and execution, leaving the dynamically
+    // keyed storage entry outside the transaction footprint and causing
+    // host_fn_failed: Error(Storage, ExceededLimit).
+    let mut arr = [0u8; 16];
+    arr[8..].copy_from_slice(&n.to_be_bytes());
+    BytesN::from_array(env, &arr)
 }
 
 #[cfg(test)]
