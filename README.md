@@ -2,13 +2,27 @@
 
 Four Rust contracts that put the Orizon Agents stack on-chain:
 
-## Repositories
+## 🚀 Live deployment
 
-| layer | repo |
+| layer | live URL | source |
+| --- | --- | --- |
+| 🔗 **Soroban contracts** (this repo, Stellar testnet) | 4 contracts deployed — [see addresses ↓](#current-testnet-deployment) | this repo |
+| 🌐 **Frontend** (Vercel) | **https://orizon-agents-fe-stellar.vercel.app** | [Frontend repo](https://github.com/ALGOREX-PH/Orizon-Agents-FE-Stellar) |
+| ⚙️ **Backend** (Render) | **https://orizon-agents-be-stellar.onrender.com** | [Backend repo](https://github.com/ALGOREX-PH/Orizon-Agents-BE-Stellar) |
+
+**▸ See the contracts in action:** [open the dApp](https://orizon-agents-fe-stellar.vercel.app/app/orchestrator) → connect [Freighter](https://freighter.app) on **Test Net** → type `code a calculator web app` → **Authorize & Execute**. The trace ends with two real testnet transactions calling `PaymentEscrow.charge` and `AttestationRegistry.seal`, both linked to `stellar.expert`.
+
+### Current testnet deployment
+
+| contract | id |
 | --- | --- |
-| Smart Contracts (this repo) | https://github.com/ALGOREX-PH/Orizon-Agents-Smart-Contract-Stellar |
-| Frontend — Next.js | https://github.com/ALGOREX-PH/Orizon-Agents-FE-Stellar |
-| Backend — FastAPI + Agno | https://github.com/ALGOREX-PH/Orizon-Agents-BE-Stellar |
+| `AgentRegistry`        | [`CAPHXWU5…J3GQ`](https://stellar.expert/explorer/testnet/contract/CAPHXWU53UZUZJGV7IAE57NNMH3YYB5MTWO6YA53KKMXSFVLOITBJ3GQ) |
+| `PaymentEscrow` (x402) | [`CBJPTMAP…525PI`](https://stellar.expert/explorer/testnet/contract/CBJPTMAPMGODGZCZ2IMEQSRUX3WGUXNMKDTNN2KMJ3NFGYZ5OJ5525PI) |
+| `AttestationRegistry`  | [`CBYUZKOE…HEGK`](https://stellar.expert/explorer/testnet/contract/CBYUZKOET43UXTBXZUJIBBJW5ODGD2J2AZVVXCR3QONGOCAHOXQQHEGK) |
+| `ReputationLedger`     | [`CDHDMVVE…WXKV`](https://stellar.expert/explorer/testnet/contract/CDHDMVVERSNZWFJIVOBM34CYLXE4A7UACHD3A6ROI63EYJY43J63WXKV) |
+| Asset SAC (XLM)        | [`CDLZFC3S…CYSC`](https://stellar.expert/explorer/testnet/contract/CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC) |
+
+Admin: `GA7AI5TAJEZA27I666DSJC4MUJYBEWUYNNZWPU7R2ONA7IZQVO6R5OQV`
 
 ---
 
