@@ -81,7 +81,7 @@ The backend (FastAPI + Agno) orchestrates the intent, calls these contracts in o
 ## Layout
 
 ```
-crates/
+contract/
   shared/                 # #[contracttype] structs shared across contracts
   agent-registry/
   reputation-ledger/
