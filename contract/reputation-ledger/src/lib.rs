@@ -195,6 +195,48 @@ impl ReputationLedger {
         Ok(())
     }
 
+    /// View — the agent's RepState decayed to now (nothing is written).
+    pub fn rep_state(env: Env, agent_id: Symbol) -> RepState {
+        decayed_state(&env, &agent_id)
+    }
+
+    /// View — decayed weighted mean in basis points (0..10_000, since
+    /// `sum_w` already carries the × 100 scale). 0 when weight == 0.
+    pub fn avg_bps(env: Env, agent_id: Symbol) -> u32 {
+        let s = decayed_state(&env, &agent_id);
+        if s.weight == 0 {
+            0
+        } else {
+            (s.sum_w / s.weight).clamp(0, 10_000) as u32
+        }
+    }
+
+    /// View — Bayesian-smoothed mean:
+    /// `(prior_weight × prior_bps + sum_w) / (prior_weight + weight)`.
+    /// The caller-supplied prior anchors low-evidence agents; as decayed
+    /// evidence weight grows the result converges to the raw mean.
+    /// Returns `prior_bps` when both weights are 0. Clamped to 0..10_000.
+    pub fn rep_bps(env: Env, agent_id: Symbol, prior_bps: u32, prior_weight: i128) -> u32 {
+        let s = decayed_state(&env, &agent_id);
+        let total_weight = prior_weight + s.weight;
+        if total_weight <= 0 {
+            return prior_bps;
+        }
+        let blended = (prior_weight * (prior_bps as i128) + s.sum_w) / total_weight;
+        blended.clamp(0, 10_000) as u32
+    }
+
+    /// View — lifetime dispute rate in basis points:
+    /// `disputed × 10_000 / count`. 0 when count == 0. Never decayed.
+    pub fn dispute_rate_bps(env: Env, agent_id: Symbol) -> u32 {
+        let s = decayed_state(&env, &agent_id);
+        if s.count == 0 {
+            0
+        } else {
+            ((s.disputed as u64) * 10_000 / (s.count as u64)) as u32
+        }
+    }
+
     /// Admin-only: swap the scorer address.
     pub fn set_scorer(env: Env, new_scorer: Address) -> Result<(), Error> {
         let admin: Address = env
