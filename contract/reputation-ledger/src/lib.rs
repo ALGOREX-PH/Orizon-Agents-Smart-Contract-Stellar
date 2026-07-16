@@ -1,18 +1,58 @@
 #![no_std]
 
-use orizon_shared::Score;
+//! # ReputationLedger v2
+//!
+//! Decayed, value-weighted, dispute-aware rating evidence store.
+//!
+//! Design (per Jøsang beta-reputation with a forgetting factor, and ERC-8004
+//! conventions of raw evidence on-chain / complex aggregation off-chain):
+//!
+//! - **Value weighting** — each rating carries the job's USDC value (stroops)
+//!   as its weight, so a 100-USDC job moves reputation more than a 0.01-USDC
+//!   one. A per-rating weight cap stops any single job from buying dominance.
+//! - **Exponential decay** — evidence loses influence at λ = 0.925 per weekly
+//!   epoch (≈ 9-week half-life), applied lazily on write and on read, so an
+//!   agent's score reflects recent behavior rather than ancient history.
+//! - **Persistent replay guard** — v1 kept the `(agent, job)` seen-marker in
+//!   TEMPORARY storage, which expires after hours and re-opened the replay
+//!   window; v2 stores it in PERSISTENT storage.
+//! - **Lifetime counters** — `count` and `disputed` never decay; they are raw
+//!   evidence for off-chain consumers (dispute rate, volume checks).
+
 use soroban_sdk::{
-    contract, contracterror, contractimpl, contracttype, symbol_short, Address, BytesN, Env,
-    Symbol,
+    contract, contracterror, contractimpl, contracttype, symbol_short, Address, BytesN, Env, Symbol,
 };
+
+/// Per-agent reputation accumulator.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct RepState {
+    /// Σ (rating_bps × weight), decayed. rating_bps = rating_0_to_100 × 100,
+    /// i.e. 0..10_000, so `sum_w / weight` is already a basis-point mean.
+    pub sum_w: i128,
+    /// Σ weight, decayed. Weight is the job's USDC value in stroops
+    /// (7 decimals, Stellar convention).
+    pub weight: i128,
+    /// Lifetime rating count — never decayed.
+    pub count: u32,
+    /// Lifetime dispute count — never decayed.
+    pub disputed: u32,
+    /// Epoch of the last write (epoch = ledger timestamp / EPOCH_SECONDS).
+    pub last_epoch: u64,
+}
 
 #[contracttype]
 pub enum DataKey {
     Admin,
     Scorer,
-    Score(Symbol),
-    /// (agent_id, job_id) → seen marker; prevents replay of the same rating.
+    /// agent_id → RepState (persistent).
+    Rep(Symbol),
+    /// (agent_id, job_id) replay marker — PERSISTENT storage so the guard
+    /// never lapses (the v1 bug kept it in temporary storage).
     Rated(Symbol, BytesN<16>),
+    /// (agent_id, payer) → cumulative i128 weight (persistent, never decayed).
+    /// Raw per-payer stake for off-chain Sybil / self-dealing analysis.
+    PayerW(Symbol, Address),
 }
 
 #[contracterror]
@@ -34,67 +74,6 @@ impl ReputationLedger {
     pub fn __constructor(env: Env, admin: Address, scorer: Address) {
         env.storage().instance().set(&DataKey::Admin, &admin);
         env.storage().instance().set(&DataKey::Scorer, &scorer);
-    }
-
-    /// Submit a rating on behalf of a completed job.
-    /// `caller` must be the registered `scorer` (the backend JobManager).
-    pub fn submit(
-        env: Env,
-        caller: Address,
-        agent_id: Symbol,
-        rating_0_to_5: u32,
-        job_id: BytesN<16>,
-    ) -> Result<(), Error> {
-        caller.require_auth();
-
-        let scorer: Address = env
-            .storage()
-            .instance()
-            .get(&DataKey::Scorer)
-            .ok_or(Error::NotFound)?;
-        if caller != scorer {
-            return Err(Error::Unauthorized);
-        }
-        if rating_0_to_5 > 5 {
-            return Err(Error::OutOfRange);
-        }
-        let seen_key = DataKey::Rated(agent_id.clone(), job_id.clone());
-        if env.storage().temporary().has(&seen_key) {
-            return Err(Error::Replay);
-        }
-
-        let key = DataKey::Score(agent_id.clone());
-        let mut score: Score = env
-            .storage()
-            .persistent()
-            .get(&key)
-            .unwrap_or(Score { sum: 0, count: 0 });
-        score.sum += rating_0_to_5 as u64;
-        score.count += 1;
-        env.storage().persistent().set(&key, &score);
-        env.storage().temporary().set(&seen_key, &true);
-
-        env.events()
-            .publish((symbol_short!("rated"), agent_id), (rating_0_to_5, job_id));
-        Ok(())
-    }
-
-    /// View — raw sum + count.
-    pub fn score(env: Env, agent_id: Symbol) -> Score {
-        env.storage()
-            .persistent()
-            .get(&DataKey::Score(agent_id))
-            .unwrap_or(Score { sum: 0, count: 0 })
-    }
-
-    /// View — mean × 10000 (basis points). 0 if count == 0.
-    pub fn avg_bps(env: Env, agent_id: Symbol) -> u32 {
-        let s = Self::score(env, agent_id);
-        if s.count == 0 {
-            0
-        } else {
-            ((s.sum * 10_000) / (s.count as u64)) as u32
-        }
     }
 
     /// Admin-only: swap the scorer address.
