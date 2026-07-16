@@ -188,6 +188,10 @@ impl ReputationLedger {
             .set(&DataKey::Rep(agent_id.clone()), &state);
         env.storage().persistent().set(&seen_key, &true);
 
+        let payer_key = DataKey::PayerW(agent_id.clone(), payer);
+        let paid: i128 = env.storage().persistent().get(&payer_key).unwrap_or(0);
+        env.storage().persistent().set(&payer_key, &(paid + weight));
+
         env.events().publish(
             (symbol_short!("rated"), agent_id),
             (rating_0_to_100, weight, job_id, kind),
@@ -235,6 +239,16 @@ impl ReputationLedger {
         } else {
             ((s.disputed as u64) * 10_000 / (s.count as u64)) as u32
         }
+    }
+
+    /// View — cumulative (never decayed) weight this payer has contributed
+    /// to this agent's reputation. 0 by default. Raw evidence for off-chain
+    /// Sybil / self-dealing analysis.
+    pub fn payer_weight(env: Env, agent_id: Symbol, payer: Address) -> i128 {
+        env.storage()
+            .persistent()
+            .get(&DataKey::PayerW(agent_id, payer))
+            .unwrap_or(0)
     }
 
     /// Admin-only: swap the scorer address.
