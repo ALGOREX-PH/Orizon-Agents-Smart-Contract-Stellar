@@ -30,11 +30,19 @@ Admin: `GA7AI5TAJEZA27I666DSJC4MUJYBEWUYNNZWPU7R2ONA7IZQVO6R5OQV`
 | crate | purpose |
 | --- | --- |
 | `agent-registry` | ERC-8004-style identity, skills, price catalog |
-| `reputation-ledger` | rating aggregates (rolling mean) per agent |
+| `reputation-ledger` | decayed, value-weighted rating evidence per agent (v2) |
 | `payment-escrow` | x402-style per-call USDC authorize / charge / receipt |
 | `attestation-registry` | write-once workflow receipts (job_id → proof record) |
 
 Target: **Stellar testnet**, Protocol 22+. Payments settle in **USDC** via the Stellar Asset Contract (SEP-41).
+
+### ReputationLedger v2
+
+Decayed, value-weighted, dispute-aware evidence store (Jøsang beta-reputation with a forgetting factor; ERC-8004 convention of raw evidence on-chain, complex aggregation off-chain):
+
+- `submit(caller, agent_id, job_id, rating_0_to_100, weight, payer, kind)` — scorer-only. `weight` is the job's USDC value in stroops, capped at 100 USDC per rating; the `(agent, job)` replay guard lives in **persistent** storage (v1 kept it in temporary storage, which expires). `kind = "dispute"` also bumps the lifetime dispute counter.
+- Evidence decays by λ = 0.925 per weekly epoch (≈ 9-week half-life), applied lazily; after 96 idle epochs it is fully forgotten. Lifetime `count` / `disputed` never decay.
+- Views (all decay-to-now, read-only): `rep_state`, `avg_bps` (weighted mean, basis points), `rep_bps(prior_bps, prior_weight)` (Bayesian-smoothed toward a caller-supplied prior), `dispute_rate_bps`, `payer_weight` (cumulative per-payer stake for off-chain Sybil analysis).
 
 ## One-time setup
 
@@ -73,7 +81,8 @@ authorize(payer, agent_id, max, expires)  → auth_id      ← PaymentEscrow
 charge(caller, auth_id, amount, job_id)   → receipt_id   ← PaymentEscrow (× per step)
 seal(caller, job_id, agents, receipts,    → ()           ← AttestationRegistry
      total_spent, orchestrator, intent_hash)
-submit(caller, agent_id, rating, job_id)  → ()           ← ReputationLedger
+submit(caller, agent_id, job_id, rating,  → ()           ← ReputationLedger
+       weight, payer, kind)
 ```
 
 The backend (FastAPI + Agno) orchestrates the intent, calls these contracts in order, and streams the SSE trace to the frontend.
