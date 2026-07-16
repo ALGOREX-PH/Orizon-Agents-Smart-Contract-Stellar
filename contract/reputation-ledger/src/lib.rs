@@ -23,6 +23,19 @@ use soroban_sdk::{
     contract, contracterror, contractimpl, contracttype, symbol_short, Address, BytesN, Env, Symbol,
 };
 
+/// Length of one decay epoch in seconds (1 week).
+const EPOCH_SECONDS: u64 = 604_800;
+/// Forgetting factor λ = DECAY_NUM / DECAY_DEN = 0.925 per epoch,
+/// giving stale evidence a ≈ 9-week half-life.
+const DECAY_NUM: i128 = 925;
+const DECAY_DEN: i128 = 1000;
+/// 0.925^96 ≈ 0.0006 — beyond this many idle epochs the residual evidence is
+/// noise, so it is fully forgotten (reset to zero) instead of looped over.
+const MAX_DECAY_EPOCHS: u64 = 96;
+/// Per-rating weight cap: 100 USDC in stroops (7 decimals). Caps how much
+/// reputation a single job can buy.
+const MAX_WEIGHT: i128 = 1_000_000_000;
+
 /// Per-agent reputation accumulator.
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -68,12 +81,118 @@ pub enum Error {
 #[contract]
 pub struct ReputationLedger;
 
+/// Current decay epoch derived from the ledger timestamp.
+fn current_epoch(env: &Env) -> u64 {
+    env.ledger().timestamp() / EPOCH_SECONDS
+}
+
+/// Lazily decay `state` to `current` epoch: scale `sum_w` and `weight` by
+/// λ once per elapsed epoch (both scale together, so the mean is unchanged
+/// by pure decay). Beyond MAX_DECAY_EPOCHS the evidence is zeroed outright.
+/// Lifetime `count` / `disputed` are never decayed.
+fn decay_to(state: &mut RepState, current: u64) {
+    if current <= state.last_epoch {
+        return;
+    }
+    let delta = current - state.last_epoch;
+    if delta >= MAX_DECAY_EPOCHS {
+        state.sum_w = 0;
+        state.weight = 0;
+    } else {
+        for _ in 0..delta {
+            state.sum_w = state.sum_w * DECAY_NUM / DECAY_DEN;
+            state.weight = state.weight * DECAY_NUM / DECAY_DEN;
+        }
+    }
+    state.last_epoch = current;
+}
+
+/// Load the agent's RepState decayed to the current epoch — in memory only,
+/// nothing is written back (views must never write).
+fn decayed_state(env: &Env, agent_id: &Symbol) -> RepState {
+    let now = current_epoch(env);
+    let mut state: RepState = env
+        .storage()
+        .persistent()
+        .get(&DataKey::Rep(agent_id.clone()))
+        .unwrap_or(RepState {
+            sum_w: 0,
+            weight: 0,
+            count: 0,
+            disputed: 0,
+            last_epoch: now,
+        });
+    decay_to(&mut state, now);
+    state
+}
+
 #[allow(deprecated)]
 #[contractimpl]
 impl ReputationLedger {
     pub fn __constructor(env: Env, admin: Address, scorer: Address) {
         env.storage().instance().set(&DataKey::Admin, &admin);
         env.storage().instance().set(&DataKey::Scorer, &scorer);
+    }
+
+    /// Record a rating for a completed job.
+    ///
+    /// - `caller` must be the registered scorer (the backend JobManager).
+    /// - `rating_0_to_100` is stored as basis points (× 100 → 0..10_000).
+    /// - `weight` is the job's USDC value in stroops, 0 < weight ≤ MAX_WEIGHT.
+    /// - `(agent_id, job_id)` can only ever be rated once (persistent guard).
+    /// - `payer` accrues cumulative stake for off-chain Sybil analysis.
+    /// - `kind == "dispute"` additionally bumps the lifetime dispute counter.
+    #[allow(clippy::too_many_arguments)] // mirrors the fixed v2 ABI
+    pub fn submit(
+        env: Env,
+        caller: Address,
+        agent_id: Symbol,
+        job_id: BytesN<16>,
+        rating_0_to_100: u32,
+        weight: i128,
+        payer: Address,
+        kind: Symbol,
+    ) -> Result<(), Error> {
+        caller.require_auth();
+
+        let scorer: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::Scorer)
+            .ok_or(Error::NotFound)?;
+        if caller != scorer {
+            return Err(Error::Unauthorized);
+        }
+        if rating_0_to_100 > 100 {
+            return Err(Error::OutOfRange);
+        }
+        if weight <= 0 || weight > MAX_WEIGHT {
+            return Err(Error::OutOfRange);
+        }
+
+        let seen_key = DataKey::Rated(agent_id.clone(), job_id.clone());
+        if env.storage().persistent().has(&seen_key) {
+            return Err(Error::Replay);
+        }
+
+        let mut state = decayed_state(&env, &agent_id);
+        state.sum_w += (rating_0_to_100 as i128) * 100 * weight;
+        state.weight += weight;
+        state.count += 1;
+        if kind == symbol_short!("dispute") {
+            state.disputed += 1;
+        }
+
+        env.storage()
+            .persistent()
+            .set(&DataKey::Rep(agent_id.clone()), &state);
+        env.storage().persistent().set(&seen_key, &true);
+
+        env.events().publish(
+            (symbol_short!("rated"), agent_id),
+            (rating_0_to_100, weight, job_id, kind),
+        );
+        Ok(())
     }
 
     /// Admin-only: swap the scorer address.
