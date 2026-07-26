@@ -61,4 +61,8 @@ pub mod codes {
     pub const REVOKED: u32 = 6;
     pub const REPLAY: u32 = 7;
     pub const INACTIVE: u32 = 8;
+    /// Rating or weight outside the accepted range (reputation-ledger).
+    pub const OUT_OF_RANGE: u32 = 100;
+    /// Non-positive authorize/charge amount (payment-escrow).
+    pub const BAD_AMOUNT: u32 = 101;
 }
