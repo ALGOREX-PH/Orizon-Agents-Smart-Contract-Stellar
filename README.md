@@ -6,7 +6,7 @@ Four Rust contracts that put the Orizon Agents stack on-chain:
 
 | layer | live URL | source |
 | --- | --- | --- |
-| 🔗 **Soroban contracts** (this repo, Stellar testnet) | 4 contracts deployed — [see addresses ↓](#current-testnet-deployment) | this repo |
+| 🔗 **Soroban contracts** (this repo, Stellar mainnet + testnet) | 4 contracts deployed — [see addresses ↓](#current-testnet-deployment) | this repo |
 | 🌐 **Frontend** (Vercel) | **https://orizon-agents-fe-stellar.vercel.app** | [Frontend repo](https://github.com/ALGOREX-PH/Orizon-Agents-FE-Stellar) |
 | ⚙️ **Backend** (Render) | **https://orizon-agents-be-stellar.onrender.com** | [Backend repo](https://github.com/ALGOREX-PH/Orizon-Agents-BE-Stellar) |
 
@@ -46,7 +46,7 @@ Admin: `GA7AI5TAJEZA27I666DSJC4MUJYBEWUYNNZWPU7R2ONA7IZQVO6R5OQV`
 | `payment-escrow` | x402-style per-call USDC authorize / charge / receipt |
 | `attestation-registry` | write-once workflow receipts (job_id → proof record) |
 
-Target: **Stellar testnet**, Protocol 22+. Payments settle in **USDC** via the Stellar Asset Contract (SEP-41).
+Target: **Stellar mainnet** (production) + **testnet**, Protocol 22+. Payments settle in **USDC** via the Stellar Asset Contract (SEP-41).
 
 ### ReputationLedger v2
 
