@@ -84,7 +84,10 @@ make check         # cargo check --all
 make test          # cargo test --all
 make build         # stellar contract build → target/wasm32-unknown-unknown/release/*.wasm
 make deploy-test   # deploys all four to testnet; writes addresses.json
+make deploy-main   # deploys all four to mainnet (CONFIRM_MAINNET=yes guard); writes addresses.mainnet.json
 ```
+
+Per-network address books (`addresses.json` for testnet, `addresses.mainnet.json` for mainnet) are gitignored.
 
 ## Job lifecycle (on-chain)
 
