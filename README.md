@@ -94,8 +94,8 @@ Per-network address books (`addresses.json` for testnet, `addresses.mainnet.json
 ```
 authorize(payer, agent_id, max, expires)  → auth_id      ← PaymentEscrow
 charge(caller, auth_id, amount, job_id)   → receipt_id   ← PaymentEscrow (× per step)
-seal(caller, job_id, agents, receipts,    → ()           ← AttestationRegistry
-     total_spent, orchestrator, intent_hash)
+seal(caller, job_id, orchestrator,        → ()           ← AttestationRegistry
+     intent_hash, agents, receipts, total_spent)
 submit(caller, agent_id, job_id, rating,  → ()           ← ReputationLedger
        weight, payer, kind)
 ```
