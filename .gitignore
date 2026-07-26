@@ -5,4 +5,5 @@ Cargo.lock
 *.log
 .DS_Store
 addresses.json
+addresses.*.json
 .env
