@@ -25,6 +25,14 @@ echo "→ admin: $ADMIN_ADDR"
 echo "→ network: $NETWORK"
 echo "→ payment asset: $ASSET"
 
+# Mainnet spends real XLM and the contracts are non-upgradable — require an
+# explicit opt-in so a stray NETWORK=mainnet can't deploy by accident.
+if [ "$NETWORK" = "mainnet" ] && [ "${CONFIRM_MAINNET:-}" != "yes" ]; then
+  echo "✗ refusing mainnet deploy without CONFIRM_MAINNET=yes" >&2
+  echo "  run:  CONFIRM_MAINNET=yes NETWORK=mainnet $0" >&2
+  exit 1
+fi
+
 echo "→ building wasm artifacts"
 stellar contract build
 
