@@ -15,6 +15,11 @@ SOURCE="${SOURCE:-admin}"
 #   ASSET="USDC:G..."   before running.
 ASSET="${ASSET:-native}"
 
+# Per-network address book: testnet keeps the historical addresses.json;
+# every other network gets its own file (e.g. addresses.mainnet.json).
+ADDR_FILE="addresses.json"
+[ "$NETWORK" != "testnet" ] && ADDR_FILE="addresses.${NETWORK}.json"
+
 ADMIN_ADDR="$(stellar keys address "$SOURCE")"
 echo "→ admin: $ADMIN_ADDR"
 echo "→ network: $NETWORK"
@@ -76,7 +81,7 @@ ESC_ID=$(deploy_contract "PaymentEscrow" "$ESC_WASM" \
 ATT_ID=$(deploy_contract "AttestationRegistry" "$ATT_WASM" \
   --admin "$ADMIN_ADDR" --sealer "$ADMIN_ADDR")
 
-cat > addresses.json <<EOF
+cat > "$ADDR_FILE" <<EOF
 {
   "network": "$NETWORK",
   "admin": "$ADMIN_ADDR",
@@ -90,5 +95,5 @@ cat > addresses.json <<EOF
 EOF
 
 echo
-echo "✓ deployed — addresses.json:"
-cat addresses.json
+echo "✓ deployed — $ADDR_FILE:"
+cat "$ADDR_FILE"
