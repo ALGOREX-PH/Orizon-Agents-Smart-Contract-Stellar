@@ -1,11 +1,11 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/shared",
-    "crates/agent-registry",
-    "crates/reputation-ledger",
-    "crates/payment-escrow",
-    "crates/attestation-registry",
+    "contract/shared",
+    "contract/agent-registry",
+    "contract/reputation-ledger",
+    "contract/payment-escrow",
+    "contract/attestation-registry",
 ]
 
 [workspace.package]
@@ -17,7 +17,7 @@ license = "MIT"
 
 [workspace.dependencies]
 soroban-sdk = "25.3.1"
-orizon-shared = { path = "crates/shared" }
+orizon-shared = { path = "contract/shared" }
 
 [profile.release]
 opt-level = "z"

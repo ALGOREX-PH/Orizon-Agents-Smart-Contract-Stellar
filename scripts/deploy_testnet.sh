@@ -15,10 +15,23 @@ SOURCE="${SOURCE:-admin}"
 #   ASSET="USDC:G..."   before running.
 ASSET="${ASSET:-native}"
 
+# Per-network address book: testnet keeps the historical addresses.json;
+# every other network gets its own file (e.g. addresses.mainnet.json).
+ADDR_FILE="addresses.json"
+[ "$NETWORK" != "testnet" ] && ADDR_FILE="addresses.${NETWORK}.json"
+
 ADMIN_ADDR="$(stellar keys address "$SOURCE")"
 echo "→ admin: $ADMIN_ADDR"
 echo "→ network: $NETWORK"
 echo "→ payment asset: $ASSET"
+
+# Mainnet spends real XLM and the contracts are non-upgradable — require an
+# explicit opt-in so a stray NETWORK=mainnet can't deploy by accident.
+if [ "$NETWORK" = "mainnet" ] && [ "${CONFIRM_MAINNET:-}" != "yes" ]; then
+  echo "✗ refusing mainnet deploy without CONFIRM_MAINNET=yes" >&2
+  echo "  run:  CONFIRM_MAINNET=yes NETWORK=mainnet $0" >&2
+  exit 1
+fi
 
 echo "→ building wasm artifacts"
 stellar contract build
@@ -57,6 +70,13 @@ deploy_contract() {
     --network "$NETWORK" \
     --wasm "$wasm" \
     -- "$@" 2>&1 | tail -n1)"
+  # A dropped RPC submission makes the CLI print an error instead of an id —
+  # abort rather than write garbage into the address book. (The tx may still
+  # land late; check the account on the explorer before re-running.)
+  if ! [[ "$id" =~ ^C[A-Z2-7]{55}$ ]]; then
+    echo "✗ $label deploy did not return a contract id: $id" >&2
+    exit 1
+  fi
   echo "  $label: $id" >&2
   printf "%s" "$id"
 }
@@ -76,7 +96,7 @@ ESC_ID=$(deploy_contract "PaymentEscrow" "$ESC_WASM" \
 ATT_ID=$(deploy_contract "AttestationRegistry" "$ATT_WASM" \
   --admin "$ADMIN_ADDR" --sealer "$ADMIN_ADDR")
 
-cat > addresses.json <<EOF
+cat > "$ADDR_FILE" <<EOF
 {
   "network": "$NETWORK",
   "admin": "$ADMIN_ADDR",
@@ -90,5 +110,5 @@ cat > addresses.json <<EOF
 EOF
 
 echo
-echo "✓ deployed — addresses.json:"
-cat addresses.json
+echo "✓ deployed — $ADDR_FILE:"
+cat "$ADDR_FILE"
