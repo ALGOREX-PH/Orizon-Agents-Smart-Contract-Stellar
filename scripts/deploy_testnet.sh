@@ -70,6 +70,13 @@ deploy_contract() {
     --network "$NETWORK" \
     --wasm "$wasm" \
     -- "$@" 2>&1 | tail -n1)"
+  # A dropped RPC submission makes the CLI print an error instead of an id —
+  # abort rather than write garbage into the address book. (The tx may still
+  # land late; check the account on the explorer before re-running.)
+  if ! [[ "$id" =~ ^C[A-Z2-7]{55}$ ]]; then
+    echo "✗ $label deploy did not return a contract id: $id" >&2
+    exit 1
+  fi
   echo "  $label: $id" >&2
   printf "%s" "$id"
 }
