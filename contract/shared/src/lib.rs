@@ -16,14 +16,6 @@ pub struct Agent {
     pub registered_at: u64,
 }
 
-/// Rating aggregate per agent in ReputationLedger.
-#[contracttype]
-#[derive(Clone)]
-pub struct Score {
-    pub sum: u64,
-    pub count: u32,
-}
-
 /// Pre-authorization created by a payer; consumed by `charge`.
 #[contracttype]
 #[derive(Clone)]
